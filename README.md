@@ -1,0 +1,2 @@
+# IDC_pagina_IA
+Clasificador de imagenes con modelo ensamble_Resnet_CNN_MobileNet_guardar
