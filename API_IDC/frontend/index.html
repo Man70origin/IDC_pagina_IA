@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>IDCare IA — Detección Automatizada</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --yellow:  #F5C518;
+      --yellow2: #d4a017;
+      --bg:      #0a0a0a;
+      --card:    #141414;
+      --card2:   #1a1a1a;
+      --border:  #2a2a2a;
+      --gray:    #999;
+      --light:   #f0f0f0;
+      --red:     #ff4757;
+      --green:   #2ed573;
+      --blue:    #1e90ff;
+    }
+
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--light); min-height: 100vh; }
+
+    /* ══ HEADER ══ */
+    header {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(10,10,10,0.85); backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2.5rem;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .logo-wrap { display: flex; align-items: center; gap: 1rem; }
+    .logo-bar  { width: 4px; height: 34px; background: var(--yellow); border-radius: 4px; }
+    header h1  { font-size: 1.2rem; font-weight: 700; letter-spacing: 0.5px; }
+    header h1 .brand-id { color: #fff; }
+    header h1 .brand-care { color: var(--yellow); margin-left: 0.12rem; }
+    header h1 .brand-ia { font-size: 0.85rem; color: #ccc; letter-spacing: 0.04em; font-weight: 600; margin-left: 0.28rem; }
+    header p   { font-size: 0.75rem; color: var(--gray); margin-top: 2px; text-transform: uppercase; letter-spacing: 1px;}
+    .brand-group { display: flex; align-items: center; gap: 1rem; }
+    .logo-mark { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #F5C518 0%, #d4a017 100%); overflow: hidden; flex-shrink: 0; }
+    .logo-mark img { width: 100%; height: 100%; object-fit: contain; }
+    
+    /* ══ CONTENEDORES DE VISTAS ══ */
+    #vista-principal { display: block; padding-top: 80px; }
+    #vista-reporte   { display: none; padding-top: 80px; min-height: 100vh; background: #0f0f0f; }
+
+    /* ══ HERO & MAIN ══ */
+    #portada { text-align: center; padding: 4rem 2rem 2rem; position: relative; }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: rgba(245,197,24,0.08); border: 1px solid rgba(245,197,24,0.2);
+      border-radius: 99px; padding: 0.4rem 1.2rem; font-size: 0.75rem; color: var(--yellow); font-weight: 600; margin-bottom: 2rem;
+    }
+    #portada h2 { font-size: 2.5rem; font-weight: 800; color: #fff; margin-bottom: 1rem; }
+    #portada h2 span { color: var(--yellow); }
+    #portada .sub { font-size: 1rem; color: var(--gray); max-width: 600px; margin: 0 auto 3rem; line-height: 1.6; }
+
+    /*David se la come*, por cierto esto ya esta bonito no le muevan/
+
+    /* ══ UPLOAD ZONE ══ */
+    .upload-container { max-width: 600px; margin: 0 auto 4rem; background: var(--card2); border-radius: 12px; padding: 2rem; border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .upload-zone { border: 2px dashed #444; border-radius: 8px; padding: 3rem 2rem; text-align: center; cursor: pointer; transition: all 0.3s ease; }
+    .upload-zone:hover, .upload-zone.drag-over { border-color: var(--yellow); background: rgba(245,197,24,0.05); transform: translateY(-2px); }
+    .upload-zone .icon { font-size: 3rem; margin-bottom: 1rem; }
+    .upload-zone p { color: var(--gray); font-size: 0.95rem; }
+    .upload-zone span { color: var(--yellow); font-weight: 600; }
+    #input-imagen { display: none; }
+
+    #preview-box { display: none; margin-top: 1.5rem; text-align: center; }
+    #preview-box img { max-width: 150px; border-radius: 8px; border: 2px solid var(--border); }
+    
+    .btn-analizar { width: 100%; margin-top: 1.5rem; padding: 1rem; background: var(--yellow); color: #000; font-size: 1rem; font-weight: 700; border: none; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+    .btn-analizar:hover:not(:disabled) { background: var(--light); transform: translateY(-2px); }
+    .btn-analizar:disabled { background: var(--border); color: #555; cursor: not-allowed; }
+
+    /* LOADER */
+    .loader { display: none; text-align: center; padding: 2rem; }
+    .spinner { width: 40px; height: 40px; border: 4px solid var(--border); border-top-color: var(--yellow); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 1rem; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ══ VISTA REPORTE (NUEVA "PESTAÑA") ══ */
+    .report-header { max-width: 1000px; margin: 2rem auto; display: flex; justify-content: space-between; align-items: center; padding: 0 2rem; }
+    .btn-volver { background: transparent; border: 1px solid var(--border); color: var(--light); padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; transition: 0.2s; }
+    .btn-volver:hover { border-color: var(--yellow); color: var(--yellow); }
+
+    .report-grid { max-width: 1000px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; padding: 0 2rem 4rem; }
+    
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; }
+    .card-title { font-size: 0.85rem; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.8rem; }
+
+    /* DIAGNÓSTICO */
+    .dx-hero { text-align: center; padding: 2rem 0; }
+    .dx-badge { display: inline-block; padding: 0.8rem 2rem; border-radius: 8px; font-size: 1.5rem; font-weight: 800; margin-bottom: 1rem; border: 2px solid transparent; }
+    .dx-positivo { background: rgba(255,71,87,0.1); color: var(--red); border-color: rgba(255,71,87,0.3); }
+    .dx-negativo { background: rgba(46,213,115,0.1); color: var(--green); border-color: rgba(46,213,115,0.3); }
+    .prob-big { font-size: 3.5rem; font-weight: 900; line-height: 1; }
+    
+    /* GRÁFICOS Y MÉTRICAS (JUNTOS) */
+    .metrics-container { display: flex; flex-direction: column; gap: 2rem; }
+    
+    /* MATRIZ DE CONFUSIÓN */
+    .confusion-matrix { display: grid; grid-template-columns: auto 1fr 1fr; gap: 0.5rem; text-align: center; font-size: 0.85rem; }
+    .cm-header { font-weight: 700; color: var(--gray); padding: 0.5rem; }
+    .cm-cell { background: var(--card2); border: 1px solid var(--border); padding: 1rem; border-radius: 6px; display: flex; flex-direction: column; justify-content: center; }
+    .cm-tp { border-color: rgba(46,213,115,0.5); }
+    .cm-tn { border-color: rgba(30,144,255,0.5); }
+    .cm-fn, .cm-fp { border-color: rgba(255,71,87,0.5); }
+    .cm-val { font-size: 1.2rem; font-weight: 800; color: #fff; margin-top: 0.2rem; }
+
+    canvas#aucCanvas { width: 100%; max-width: 400px; margin: 0 auto; display: block; }
+    
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      .report-grid { grid-template-columns: 1fr; }
+      .confusion-matrix, .confusion-model-grid { font-size: 0.75rem; }
+      .confusion-model-grid { grid-template-columns: 1fr; }
+    }
+
+    .warning-text {
+      background: linear-gradient(45deg, #ff4757, #ff6b81);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+    <!--  TItulo no le muevan-->
+<header>
+  <div class="logo-wrap">
+    <div class="logo-mark">
+      <img src="/static/logo.png" alt="Logo IDCare" />
+    </div>
+    <div class="brand-group">
+      <div class="logo-bar"></div>
+      <div>
+        <h1><span class="brand-id">ID</span><span class="brand-care">Care</span> <span class="brand-ia">IA</span></h1>
+        <p>Modelo de Ensamblaje ~ Deep Learning ~ Histopatología</p>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div id="vista-principal">
+  <section id="portada">
+    <div class="hero-badge">ENSAMBLAJE ACTIVO (ResNet + CNN + MobileNet)</div>
+    <h2>Análisis Histopatológico<br><span>Asistido por IA</span></h2>
+    <p class="sub">Sube un parche histopatológico (50x50 px). El modelo procesará la imagen utilizando la arquitectura de ensamblaje entrenada con 277K imágenes.</p>
+  </section>
+
+  <div class="upload-container">
+    <div class="upload-zone" id="zona-upload"
+         onclick="document.getElementById('input-imagen').click()"
+         ondragover="manejarDragOver(event)"
+         ondragleave="this.classList.remove('drag-over')"
+         ondrop="manejarDrop(event)">
+      <div class="icon">🔬</div>
+      <p>Arrastra tu imagen 50x50 de carcinoma aqui o <span>haz clic para explorar</span></p>
+    </div>
+    <input type="file" id="input-imagen" accept="image/png,image/jpeg" onchange="previsualizarImagen(this)">
+    
+    <div id="preview-box">
+      <img id="img-preview" src="" alt="Vista previa">
+    </div>
+    
+    <div class="loader" id="loader">
+      <div class="spinner"></div>
+      <p style="color: var(--yellow); font-size: 0.9rem;">Ejecutando inferencia en modelos...</p>
+    </div>
+
+    <button id="btn-analizar" class="btn-analizar" onclick="analizarImagen()" disabled>Generar Reporte Clínico</button>
+  </div>
+
+  <section style="padding: 2rem 2rem 4rem; max-width: 960px; margin: 0 auto;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+      <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 1.4rem;">
+        <div style="font-size: 0.8rem; font-weight: 700; color: var(--yellow); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 0.8rem;">Dataset</div>
+        <div style="font-size: 1.15rem; font-weight: 700; color: #fff; margin-bottom: 0.4rem;">CSV: 277,524</div>
+        <div style="font-size: 0.9rem; color: var(--gray); line-height: 1.6;">Parches balanceados extraídos de imágenes histopatológicas para detección IDC.</div>
+      </div>
+      <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 1.4rem;">
+        <div style="font-size: 0.8rem; font-weight: 700; color: var(--yellow); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 0.8rem;">Distribución</div>
+        <div style="font-size: 1.15rem; font-weight: 700; color: #fff; margin-bottom: 0.4rem;">IDC(+): 78,786</div>
+        <div style="font-size: 1.15rem; font-weight: 700; color: #fff; margin-bottom: 0.4rem;">IDC(-): 198,738</div>
+       
+      </div>
+      <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 1.4rem;">
+        <div style="font-size: 0.8rem; font-weight: 700; color: var(--yellow); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 0.8rem;">Resolución</div>
+        <div style="font-size: 1.15rem; font-weight: 700; color: #fff; margin-bottom: 0.4rem;">50 × 50 px</div>
+        <div style="font-size: 0.9rem; color: var(--gray); line-height: 1.6;">Formato de parche aceptado por el modelo. <span class="warning-text">¡Por Favor asegurense de subir imágenes a esta resolución!</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding: 0 2rem 4rem; max-width: 960px; margin: 0 auto;">
+    <p style="text-align: center; font-size: 0.74rem; font-weight: 700; color: var(--yellow); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 0.5rem;">Arquitectura</p>
+    <h2 style="text-align: center; font-size: 1.75rem; font-weight: 800; color: #fff; margin-bottom: 2.8rem;">Modelos CNN Utilizados</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.2rem;">
+      <div style="background: var(--card2); border: 1px solid var(--border); border-radius: 10px; padding: 1.6rem; transition: border-color 0.25s;">
+        <div style="font-size: 1.8rem; margin-bottom: 0.9rem;">🏗️</div>
+        <h3 style="font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 0.45rem;">ResNet (Residual Network)</h3>
+        <p style="font-size: 0.82rem; color: var(--gray); line-height: 1.6;">Red neuronal residual profunda que utiliza conexiones de salto para mitigar el problema del gradiente evanecente. Excelente para capturar patrones complejos en imágenes histopatológicas.</p>
+      </div>
+      <div style="background: var(--card2); border: 1px solid var(--border); border-radius: 10px; padding: 1.6rem; transition: border-color 0.25s;">
+        <div style="font-size: 1.8rem; margin-bottom: 0.9rem;">📱</div>
+        <h3 style="font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 0.45rem;">MobileNet</h3>
+        <p style="font-size: 0.82rem; color: var(--gray); line-height: 1.6;">Arquitectura ligera y eficiente optimizada para dispositivos con recursos limitados. Utiliza convoluciones separables para reducir parámetros manteniendo alta precisión.</p>
+      </div>
+      <div style="background: var(--card2); border: 1px solid var(--border); border-radius: 10px; padding: 1.6rem; transition: border-color 0.25s;">
+        <div style="font-size: 1.8rem; margin-bottom: 0.9rem;">🧠</div>
+        <h3 style="font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 0.45rem;">CNN (Convolutional Neural Network)</h3>
+        <p style="font-size: 0.82rem; color: var(--gray); line-height: 1.6;">Red convolucional personalizada entrenada específicamente para detección de IDC. Combina capas convolucionales para extraer características distintivas de imágenes.</p>
+      </div>
+      <div style="background: var(--card2); border: 1px solid var(--border); border-radius: 10px; padding: 1.6rem; transition: border-color 0.25s;">
+        <div style="font-size: 1.8rem; margin-bottom: 0.9rem;">⚙️</div>
+        <h3 style="font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 0.45rem;">Votación por Ensamblaje</h3>
+        <p style="font-size: 0.82rem; color: var(--gray); line-height: 1.6;">Los tres modelos realizan predicciones independientes combinadas mediante votación ponderada (45% ResNet, 45% CNN, 10% MobileNet) para máxima confiabilidad.</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div id="vista-reporte">
+  <div class="report-header">
+    <h2>📄 Reporte de Análisis IDC</h2>
+    <button class="btn-volver" onclick="volverInicio()">← Nuevo Análisis</button>
+  </div>
+
+  <div class="report-grid">
+    
+    <div class="card" style="display: flex; flex-direction: column; justify-content: center;">
+      <div class="card-title">Veredicto del Ensamblaje</div>
+      <div class="dx-hero">
+        <div class="dx-badge" id="dx-badge">—</div>
+        <div style="color: var(--gray); margin-bottom: 0.5rem; font-size: 0.9rem;">Confianza del Sistema</div>
+        <div class="prob-big" id="prob-pct-label">—</div>
+        <div style="color: var(--gray); margin-top: 1rem; font-size: 0.9rem;">Margen de Error: <span id="margen-error">—</span></div>
+      </div>
+      
+      <div style="margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1.5rem;">
+        <p id="mensaje-resultado" style="color: #ccc; line-height: 1.6; font-size: 0.95rem; text-align: center;">—</p>
+      </div>
+    </div>
+ <!--  matrix de confusion no le muevan tonotos-->
+    <div class="card metrics-container">
+  
+      <div>
+        <div class="card-title">Matriz de Confusión del Ensamble (Umbral 0.4)</div>
+        <div class="confusion-matrix">
+          <div></div>
+          <div class="cm-header">Predicción IDC-</div>
+          <div class="cm-header">Predicción IDC+</div>
+
+          <div class="cm-header" style="writing-mode: vertical-rl; transform: rotate(180deg);">Real IDC-</div>
+          <div class="cm-cell cm-tn">
+            <span>Verdadero Negativo</span>
+            <span class="cm-val" id="ensemble-tn">9,883</span>
+          </div>
+          <div class="cm-cell cm-fp">
+            <span>Falso Positivo</span>
+            <span class="cm-val" id="ensemble-fp">3,284</span>
+          </div>
+
+          <div class="cm-header" style="writing-mode: vertical-rl; transform: rotate(180deg);">Real IDC+</div>
+          <div class="cm-cell cm-fn">
+            <span>Falso Negativo</span>
+            <span class="cm-val" id="ensemble-fn">448</span>
+          </div>
+          <div class="cm-cell cm-tp">
+            <span>Verdadero Positivo</span>
+            <span class="cm-val" id="ensemble-tp">11,713</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top: 1rem;">
+        <div class="card-title">Curva AUC-ROC</div>
+
+
+        <canvas id="aucCanvas" width="400" height="250"></canvas>
+
+
+        <div style="text-align: center; margin-top: 1rem; color: var(--yellow); font-weight: bold;">
+          AUC Score: <span id="legend-auc">—</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  let archivoSeleccionado = null;
+  const ensembleConfusion = {
+    tn: 9883,
+    fp: 3284,
+    fn: 448,
+    tp: 11713
+  };
+
+  function renderEnsembleConfusion() {
+    document.getElementById('ensemble-tn').textContent = ensembleConfusion.tn.toLocaleString('es-ES');
+    document.getElementById('ensemble-fp').textContent = ensembleConfusion.fp.toLocaleString('es-ES');
+    document.getElementById('ensemble-fn').textContent = ensembleConfusion.fn.toLocaleString('es-ES');
+    document.getElementById('ensemble-tp').textContent = ensembleConfusion.tp.toLocaleString('es-ES');
+  }
+
+  renderEnsembleConfusion();
+
+  // Manejo UI - Subida
+  function previsualizarImagen(input) {
+    const archivo = input.files[0];
+    if (!archivo) return;
+    archivoSeleccionado = archivo;
+    const lector = new FileReader();
+    lector.onload = (e) => {
+      document.getElementById('img-preview').src = e.target.result;
+      document.getElementById('preview-box').style.display = 'block';
+      document.getElementById('btn-analizar').disabled = false;
+    };
+    lector.readAsDataURL(archivo);
+  }
+
+  function manejarDragOver(e) { e.preventDefault(); document.getElementById('zona-upload').classList.add('drag-over'); }
+  function manejarDrop(e) {
+    e.preventDefault();
+    document.getElementById('zona-upload').classList.remove('drag-over');
+    const archivo = e.dataTransfer.files[0];
+    if (archivo) {
+      const dt = new DataTransfer(); dt.items.add(archivo);
+      const input = document.getElementById('input-imagen'); input.files = dt.files;
+      previsualizarImagen(input);
+    }
+  }
+
+  // Volver a inicio, arreglado ya no le muevan
+  function volverInicio() {
+    document.getElementById('vista-reporte').style.display = 'none';
+    document.getElementById('vista-principal').style.display = 'block';
+    window.scrollTo(0, 0);
+  }
+
+  // Petición al Backend
+  async function analizarImagen() {
+    if (!archivoSeleccionado) return;
+
+    document.getElementById('loader').style.display = 'block';
+    document.getElementById('btn-analizar').style.display = 'none';
+
+    try {
+      const formData = new FormData();
+      formData.append('file', archivoSeleccionado); 
+
+      const respuesta = await fetch('http://localhost:8000/api/analizar', {
+        method: 'POST',
+        body: formData
+      });
+
+      const resJson = await respuesta.json();
+      
+      if (resJson.status === "success") {
+          mostrarReporte(resJson.data);
+      } else {
+          throw new Error("Error en el análisis");
+      }
+    } catch (error) {
+      alert("Error: Asegúrate de que el servidor FastAPI esté corriendo.");
+      document.getElementById('loader').style.display = 'none';
+      document.getElementById('btn-analizar').style.display = 'block';
+    }
+  }
+
+  // Rellenar Reporte- no mover tonotos
+  function mostrarReporte(datos) {
+    const esPositivo = datos.clase === 1;
+    const prob = datos.confianza;
+    const probPct = (prob * 100).toFixed(1);
+    const aucScore = datos.auc ?? 0.962;
+    const margen = datos.margen ?? 0.032;
+
+    // Colores y textos
+    const badge = document.getElementById('dx-badge');
+    badge.className = 'dx-badge ' + (esPositivo ? 'dx-positivo' : 'dx-negativo');
+    badge.textContent = datos.prediccion;
+
+    const probLabel = document.getElementById('prob-pct-label');
+    probLabel.textContent = probPct + '%';
+    probLabel.style.color = esPositivo ? 'var(--red)' : 'var(--green)';
+
+    document.getElementById('margen-error').textContent = (margen * 100).toFixed(1) + '%';
+    document.getElementById('mensaje-resultado').textContent = datos.mensaje;
+    document.getElementById('legend-auc').textContent = aucScore.toFixed(3);
+
+    // Cambiar vista
+    document.getElementById('loader').style.display = 'none';
+    document.getElementById('btn-analizar').style.display = 'block';
+    document.getElementById('vista-principal').style.display = 'none';
+    document.getElementById('vista-reporte').style.display = 'block';
+    window.scrollTo(0, 0);
+
+    dibujarAUC(aucScore);
+  }
+  // Gráfica AUC - Configurada para AUC 0.962
+// Gráfica AUC
+function dibujarAUC(auc = 0.962) {
+    const canvas = document.getElementById('aucCanvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const PAD = { top: 20, right: 20, bottom: 40, left: 40 };
+    const CW = W - PAD.left - PAD.right;
+    const CH = H - PAD.top  - PAD.bottom;
+
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = '#1a1a1a'; ctx.fillRect(0, 0, W, H);
+
+    // Grid y Ejes
+    ctx.strokeStyle = '#333'; ctx.lineWidth = 1;
+    [0, 0.5, 1].forEach(v => {
+        const y = PAD.top + CH * (1 - v); const x = PAD.left + CW * v;
+        ctx.beginPath(); ctx.moveTo(PAD.left, y); ctx.lineTo(PAD.left + CW, y); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x, PAD.top); ctx.lineTo(x, PAD.top + CH); ctx.stroke();
+    });
+
+    ctx.strokeStyle = '#666'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(PAD.left, PAD.top); ctx.lineTo(PAD.left, PAD.top + CH); ctx.lineTo(PAD.left + CW, PAD.top + CH); ctx.stroke();
+
+    // Línea base (Aleatoria)
+    ctx.strokeStyle = '#555'; ctx.setLineDash([5, 5]);
+    ctx.beginPath(); ctx.moveTo(PAD.left, PAD.top + CH); ctx.lineTo(PAD.left + CW, PAD.top); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Curva AUC
+    const pts = [];
+    // Cálculo matemático para el AUC exacto
+    const k = (1 / auc) - 1; 
+
+    for(let i=0; i<=50; i++) {
+        let fpr = i/50;
+        let tpr = Math.min(1, Math.pow(fpr, k));
+        pts.push([fpr, tpr]);
+    }
+
+    // --- AQUÍ SE DIBUJA LA LÍNEA AMARILLA ---
+    ctx.strokeStyle = '#FFD700'; // Amarillo dorado
+    ctx.lineWidth = 2; // Grosor original
+    ctx.beginPath();
+    
+    pts.forEach((pt, i) => {
+        let canvasX = PAD.left + (pt[0] * CW);
+        let canvasY = PAD.top + CH - (pt[1] * CH);
+        
+        if (i === 0) {
+            ctx.moveTo(canvasX, canvasY);
+        } else {
+            ctx.lineTo(canvasX, canvasY);
+        }
+    });
+    
+    ctx.stroke();
+}
+
+/* creditos Alexis, Axel, David XD, Gabriel ayuuuuuudaaaaaaaaaaaaaaaa */
+</script>
+
+<footer style="text-align: center; padding: 1rem; background: var(--card); border-top: 1px solid var(--border); color: var(--gray); font-size: 0.8rem;">
+  © 2026 Desarrollado por Equipo 4 de IA, AGAD. XD. Proyecto académico de detección de Carcinoma Ductal Invasivo usando ensamblaje de CNN. No usar con fines clínicos reales.
+</footer>
+</body>
+</html>
